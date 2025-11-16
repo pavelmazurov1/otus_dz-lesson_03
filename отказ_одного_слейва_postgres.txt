@@ -1,0 +1,59 @@
+отказ одного слейва postgres:
+
+pavel.mazurov@F7GM2K6971-MBP otus_dz-lesson_03 % docker kill postgres-slave1  
+postgres-slave1
+
+pavel.mazurov@F7GM2K6971-MBP otus_dz-lesson_03 % ./load-test/run.sh
+Send 20 requests to http://localhost:8080/data...
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:46.100440+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:46.718117+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:47.318275+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:47.965742+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:48.606223+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:49.256425+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:49.902412+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:50.490204+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:51.115798+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:51.748220+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:52.290944+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:52.917933+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:53.555052+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:54.213200+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:54.837093+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:55.420240+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:56.043865+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:56.663382+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:57.295583+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:57:57.944305+00:00"}
+
+pavel.mazurov@F7GM2K6971-MBP otus_dz-lesson_03 % docker ps   
+CONTAINER ID   IMAGE                               COMMAND                  CREATED         STATUS         PORTS                    NAMES
+e2a05899ebb7   otus_dz-lesson_03-nginx             "/docker-entrypoint.…"   7 minutes ago   Up 7 minutes   0.0.0.0:8080->80/tcp     nginx
+7e8473b2fc2e   otus_dz-lesson_03-backend1          "python app.py"          7 minutes ago   Up 7 minutes   5000/tcp                 backend1
+530f07de2a9a   otus_dz-lesson_03-backend2          "python app.py"          7 minutes ago   Up 7 minutes   5000/tcp                 backend2
+cf03ff75891c   otus_dz-lesson_03-haproxy           "docker-entrypoint.s…"   7 minutes ago   Up 7 minutes   0.0.0.0:5432->5432/tcp   haproxy
+6a5e24df0a07   otus_dz-lesson_03-postgres-slave2   "docker-entrypoint.s…"   7 minutes ago   Up 7 minutes   0.0.0.0:5434->5432/tcp   postgres-slave2
+
+По логам выше видно, что система продолжает работать через второй слейв postgresql - haproxy перенаправляет запросы, приложение остаётся доступным
+
+Восстанавливаю первый слейв:
+pavel.mazurov@F7GM2K6971-MBP otus_dz-lesson_03 % docker compose restart postgres-slave1
+[+] Running 1/1
+ ⠿ Container postgres-slave1  Start...                             0.3s
+pavel.mazurov@F7GM2K6971-MBP otus_dz-lesson_03 % docker ps
+CONTAINER ID   IMAGE                               COMMAND                  CREATED         STATUS         PORTS                    NAMES
+e2a05899ebb7   otus_dz-lesson_03-nginx             "/docker-entrypoint.…"   8 minutes ago   Up 8 minutes   0.0.0.0:8080->80/tcp     nginx
+7e8473b2fc2e   otus_dz-lesson_03-backend1          "python app.py"          8 minutes ago   Up 8 minutes   5000/tcp                 backend1
+530f07de2a9a   otus_dz-lesson_03-backend2          "python app.py"          8 minutes ago   Up 8 minutes   5000/tcp                 backend2
+cf03ff75891c   otus_dz-lesson_03-haproxy           "docker-entrypoint.s…"   8 minutes ago   Up 8 minutes   0.0.0.0:5432->5432/tcp   haproxy
+f4c8cdfceb0b   otus_dz-lesson_03-postgres-slave1   "docker-entrypoint.s…"   8 minutes ago   Up 4 seconds   0.0.0.0:5433->5432/tcp   postgres-slave1
+6a5e24df0a07   otus_dz-lesson_03-postgres-slave2   "docker-entrypoint.s…"   8 minutes ago   Up 8 minutes   0.0.0.0:5434->5432/tcp   postgres-slave2
+
+Логи haproxy:
+pavel.mazurov@F7GM2K6971-MBP otus_dz-lesson_03 % docker-compose logs haproxy
+haproxy  | [NOTICE]   (1) : Initializing new worker (8)
+haproxy  | [NOTICE]   (1) : Loading success.
+haproxy  | [WARNING]  (8) : Server postgres_back/slave1 is DOWN, reason: Layer4 connection problem, info: "Connection refused", check duration: 0ms. 1 active and 0 backup servers left. 0 sessions active, 0 requeued, 0 remaining in queue.
+haproxy  | [WARNING]  (8) : Server postgres_back/slave1 is UP, reason: Layer7 check passed, code: 0, info: "PostgreSQL server is ok", check duration: 3ms. 2 active and 0 backup servers online. 0 sessions requeued, 0 total in queue.
+haproxy  | [WARNING]  (8) : Server postgres_back/slave1 is DOWN, reason: Layer4 timeout, check duration: 2003ms. 1 active and 0 backup servers left. 0 sessions active, 0 requeued, 0 remaining in queue.
+haproxy  | [WARNING]  (8) : Server postgres_back/slave1 is UP, reason: Layer7 check passed, code: 0, info: "PostgreSQL server is ok", check duration: 9ms. 2 active and 0 backup servers online. 0 sessions requeued, 0 total in queue.

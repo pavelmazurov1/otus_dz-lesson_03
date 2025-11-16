@@ -1,0 +1,35 @@
+Чередование ответов при нормальной работе (балансировка):
+
+pavel.mazurov@F7GM2K6971-MBP otus_dz-lesson_03 % docker ps
+CONTAINER ID   IMAGE                               COMMAND                  CREATED          STATUS          PORTS                    NAMES
+e2a05899ebb7   otus_dz-lesson_03-nginx             "/docker-entrypoint.…"   17 minutes ago   Up 17 minutes   0.0.0.0:8080->80/tcp     nginx
+7e8473b2fc2e   otus_dz-lesson_03-backend1          "python app.py"          17 minutes ago   Up 55 seconds   5000/tcp                 backend1
+530f07de2a9a   otus_dz-lesson_03-backend2          "python app.py"          17 minutes ago   Up 17 minutes   5000/tcp                 backend2
+cf03ff75891c   otus_dz-lesson_03-haproxy           "docker-entrypoint.s…"   17 minutes ago   Up 17 minutes   0.0.0.0:5432->5432/tcp   haproxy
+f4c8cdfceb0b   otus_dz-lesson_03-postgres-slave1   "docker-entrypoint.s…"   17 minutes ago   Up 8 minutes    0.0.0.0:5433->5432/tcp   postgres-slave1
+6a5e24df0a07   otus_dz-lesson_03-postgres-slave2   "docker-entrypoint.s…"   17 minutes ago   Up 17 minutes   0.0.0.0:5434->5432/tcp   postgres-slave2
+
+pavel.mazurov@F7GM2K6971-MBP otus_dz-lesson_03 % ./load-test/run.sh
+Send 20 requests to http://localhost:8080/data...
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:55:29.962398+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.2","timestamp":"2025-11-16 10:55:30.633056+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:55:31.239871+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.2","timestamp":"2025-11-16 10:55:31.838750+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:55:32.516437+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.2","timestamp":"2025-11-16 10:55:33.150097+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:55:33.745562+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.2","timestamp":"2025-11-16 10:55:34.404831+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:55:35.006740+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.2","timestamp":"2025-11-16 10:55:35.576308+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:55:36.177640+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.2","timestamp":"2025-11-16 10:55:36.797854+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:55:37.380894+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.2","timestamp":"2025-11-16 10:55:37.992927+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:55:38.585619+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.2","timestamp":"2025-11-16 10:55:39.217715+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:55:39.838906+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.2","timestamp":"2025-11-16 10:55:40.464854+00:00"}
+{"backend_id":"backend1","postgres_ip":"172.22.0.3","timestamp":"2025-11-16 10:55:41.112667+00:00"}
+{"backend_id":"backend2","postgres_ip":"172.22.0.2","timestamp":"2025-11-16 10:55:41.748489+00:00"}
+
+по логам выше видно, что запросы приходят на backend1 / backend2 поочередно
